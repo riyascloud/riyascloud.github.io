@@ -1,13 +1,806 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCANIFY</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanify - Scan any Barcodes</title>
+  <meta name="description" content="Scanify is a fast and simple scanner for QR codes and barcodes, built to help you capture, organize, and revisit scans with ease." />
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0d1b2e;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.14);
+      --text: #f4f7fb;
+      --muted: #b6c2d2;
+      --primary: #56ccf2;
+      --primary-2: #2f80ed;
+      --accent: #7cf29a;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --radius: 24px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(86, 204, 242, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(124, 242, 154, 0.12), transparent 24%),
+        linear-gradient(180deg, #08111d 0%, #0b1422 45%, #07111f 100%);
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .container {
+      width: min(calc(100% - 32px), var(--max));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(7, 17, 31, 0.72);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 12px 28px rgba(47, 128, 237, 0.35);
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: 0.25s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 14px 28px rgba(47, 128, 237, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 34px rgba(47, 128, 237, 0.32);
+    }
+
+    .btn-secondary {
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .hero {
+      padding: 72px 0 40px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 44px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: #d9e7f7;
+      font-size: 0.9rem;
+      margin-bottom: 18px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(124, 242, 154, 0.8);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 5vw, 4.7rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+      max-width: 640px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .stat {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.25rem;
+      margin-bottom: 6px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .phone-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 620px;
+    }
+
+    .glow {
+      position: absolute;
+      inset: auto;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(86, 204, 242, 0.28), rgba(47, 128, 237, 0.03) 65%, transparent 72%);
+      filter: blur(10px);
+    }
+
+    .phone {
+      position: relative;
+      width: 330px;
+      border-radius: 38px;
+      padding: 14px;
+      background: linear-gradient(180deg, #101b2f, #09101a);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 18px;
+      border-radius: 0 0 16px 16px;
+      background: #050910;
+      z-index: 2;
+    }
+
+    .screen {
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top, rgba(86, 204, 242, 0.18), transparent 32%),
+        linear-gradient(180deg, #10213a 0%, #0d1829 100%);
+      min-height: 590px;
+      padding: 24px 20px 18px;
+      position: relative;
+    }
+
+    .screen-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      color: #dbe9fa;
+      font-size: 0.92rem;
+    }
+
+    .mini-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .scan-box {
+      margin-top: 18px;
+      border-radius: 24px;
+      height: 210px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scan-frame {
+      position: absolute;
+      inset: 24px;
+      border: 2px solid rgba(124, 242, 154, 0.55);
+      border-radius: 22px;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      height: 2px;
+      top: 46%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      box-shadow: 0 0 16px rgba(124,242,154,0.8);
+    }
+
+    .screen-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.88rem;
+      color: #dce7f5;
+    }
+
+    section {
+      padding: 52px 0;
+    }
+
+    .section-head {
+      max-width: 720px;
+      margin-bottom: 28px;
+    }
+
+    .section-head h2 {
+      margin: 0 0 12px;
+      font-size: clamp(1.9rem, 3vw, 3rem);
+      letter-spacing: -0.03em;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      position: relative;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -40px auto;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(86, 204, 242, 0.14), transparent 70%);
+    }
+
+    .icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(86, 204, 242, 0.18), rgba(47, 128, 237, 0.24));
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.97rem;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .list {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+    }
+
+    .check {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #54d88d);
+      color: #062316;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      flex: 0 0 auto;
+      margin-top: 2px;
+    }
+
+    .list-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    .list-item span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .analytics-panel {
+      padding: 24px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .analytics-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .analytics-top h3 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .chart {
+      display: flex;
+      align-items: end;
+      gap: 14px;
+      height: 220px;
+      padding: 16px 8px 8px;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 16px 16px 8px 8px;
+      background: linear-gradient(180deg, var(--primary), var(--primary-2));
+      box-shadow: 0 10px 22px rgba(47, 128, 237, 0.24);
+      margin-bottom: 10px;
+    }
+
+    .cta {
+      padding: 40px;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at top right, rgba(124,242,154,0.16), transparent 28%),
+        linear-gradient(135deg, rgba(86,204,242,0.12), rgba(47,128,237,0.16));
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .cta h2 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 3vw, 3rem);
+      letter-spacing: -0.03em;
+    }
+
+    .cta p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 700px;
+    }
+
+    .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: flex-end;
+    }
+
+    .note-box {
+      margin-top: 18px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      padding: 26px 0 40px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-grid,
+      .split,
+      .cta,
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-wrap {
+        min-height: auto;
+      }
+
+      .cta-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 42px;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .features {
+        gap: 16px;
+      }
+
+      .phone {
+        width: min(100%, 340px);
+      }
+
+      .cta {
+        padding: 28px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>SCANIFY - Scan any Barcodes</h1>
-  <p>Official website for the Android app SCANIFY.</p>
-  <p>This site is used for app information and app-ads.txt verification.</p>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="#top" class="brand">
+        <span class="brand-badge">S</span>
+        <span>SCANIFY</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#why">Why Scanify</a>
+        <a href="#insights">Insights</a>
+        <a href="#download" class="btn btn-primary">Get the App</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">
+            <span class="dot"></span>
+            Fast, simple, modern barcode scanning
+          </div>
+          <h1>Scan any barcodes.<br />Save what matters.</h1>
+          <p>
+            Scanify is a fast and simple scanner for QR codes and barcodes, built to help you capture,
+            organize, and revisit scans with ease. From quick product checks to saved links and daily scan records,
+            everything stays clean, searchable, and easy to manage.
+          </p>
+          <div class="hero-actions">
+            <a href="#download" class="btn btn-primary">Download Scanify</a>
+            <a href="#features" class="btn btn-secondary">Explore Features</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat">
+              <strong>QR + Barcode</strong>
+              <span>Support for common scan formats in one smooth experience.</span>
+            </div>
+            <div class="stat">
+              <strong>History + Favorites</strong>
+              <span>Revisit previous scans quickly with search and organization.</span>
+            </div>
+            <div class="stat">
+              <strong>Insights + Export</strong>
+              <span>Track activity trends and export your history to CSV.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="glow"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-top">
+                <strong>Scanify</strong>
+                <span>9:41</span>
+              </div>
+              <div class="mini-card">
+                <strong style="font-size:1.05rem; display:block; margin-bottom:6px;">Ready to scan</strong>
+                <span style="color: var(--muted); font-size:0.95rem;">Point your camera at a QR code or barcode to capture it instantly.</span>
+              </div>
+              <div class="scan-box">
+                <div class="scan-frame"></div>
+                <div class="scan-line"></div>
+              </div>
+              <div class="screen-grid">
+                <div class="pill">History search</div>
+                <div class="pill">Favorite scans</div>
+                <div class="pill">CSV export</div>
+                <div class="pill">Product lookup</div>
+              </div>
+              <div class="mini-card" style="margin-top:16px;">
+                <strong style="font-size:1rem; display:block; margin-bottom:8px;">Weekly activity</strong>
+                <div style="display:flex; gap:8px; align-items:end; height:84px; margin-top:8px;">
+                  <div style="flex:1; height:44%; border-radius:10px 10px 6px 6px; background:linear-gradient(180deg, #56ccf2, #2f80ed);"></div>
+                  <div style="flex:1; height:70%; border-radius:10px 10px 6px 6px; background:linear-gradient(180deg, #56ccf2, #2f80ed);"></div>
+                  <div style="flex:1; height:52%; border-radius:10px 10px 6px 6px; background:linear-gradient(180deg, #56ccf2, #2f80ed);"></div>
+                  <div style="flex:1; height:88%; border-radius:10px 10px 6px 6px; background:linear-gradient(180deg, #56ccf2, #2f80ed);"></div>
+                  <div style="flex:1; height:60%; border-radius:10px 10px 6px 6px; background:linear-gradient(180deg, #56ccf2, #2f80ed);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <h2>Everything you need in a barcode scanner app</h2>
+          <p>
+            Built for everyday speed and clarity, Scanify combines scanning, organization, insights, and export tools in one lightweight app experience.
+          </p>
+        </div>
+        <div class="features">
+          <article class="card">
+            <div class="icon">⌁</div>
+            <h3>Fast scanning</h3>
+            <p>Scan QR codes and common barcode formats quickly with a clean interface designed for instant use.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🕘</div>
+            <h3>Searchable history</h3>
+            <p>Every scan is saved so you can search, filter, and revisit your past activity whenever needed.</p>
+          </article>
+          <article class="card">
+            <div class="icon">★</div>
+            <h3>Favorites</h3>
+            <p>Mark important scans and keep them close for quick access without digging through your full history.</p>
+          </article>
+          <article class="card">
+            <div class="icon">📊</div>
+            <h3>Scan analytics</h3>
+            <p>View activity patterns and trends to better understand how and when you use the app.</p>
+          </article>
+          <article class="card">
+            <div class="icon">⇪</div>
+            <h3>CSV export</h3>
+            <p>Export your scan history to CSV for reporting, backup, or personal record keeping.</p>
+          </article>
+          <article class="card">
+            <div class="icon">⌕</div>
+            <h3>Product details</h3>
+            <p>Open product details for supported barcodes to get more useful context from your scans.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="container split">
+        <div>
+          <div class="section-head">
+            <h2>Why people choose Scanify</h2>
+            <p>
+              A modern scanning experience should be fast, focused, and easy to return to. Scanify is designed to keep everyday scanning practical and clutter-free.
+            </p>
+          </div>
+          <div class="list">
+            <div class="list-item">
+              <div class="check">✓</div>
+              <div>
+                <strong>Clean and lightweight</strong>
+                <span>A polished, minimal interface that gets out of your way and keeps scanning simple.</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="check">✓</div>
+              <div>
+                <strong>Quick access to recent and favorite scans</strong>
+                <span>Jump back to the items you care about most without unnecessary steps.</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="check">✓</div>
+              <div>
+                <strong>Helpful search and filtering</strong>
+                <span>Find saved scans faster with better history organization and lookup tools.</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="check">✓</div>
+              <div>
+                <strong>Useful insights</strong>
+                <span>Understand your scan activity with simple analytics and trend visibility.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-panel" id="insights">
+          <div class="analytics-top">
+            <div>
+              <h3>Scan activity insights</h3>
+              <div style="color: var(--muted); font-size:0.95rem; margin-top:4px;">A simple view of trends that helps you understand usage over time.</div>
+            </div>
+            <div style="padding:10px 14px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); font-size:0.9rem; color:#dce8f5;">This week</div>
+          </div>
+          <div class="chart" aria-label="Scan activity chart">
+            <div class="bar-wrap"><div class="bar" style="height: 38%;"></div>Mon</div>
+            <div class="bar-wrap"><div class="bar" style="height: 54%;"></div>Tue</div>
+            <div class="bar-wrap"><div class="bar" style="height: 72%;"></div>Wed</div>
+            <div class="bar-wrap"><div class="bar" style="height: 49%;"></div>Thu</div>
+            <div class="bar-wrap"><div class="bar" style="height: 88%;"></div>Fri</div>
+            <div class="bar-wrap"><div class="bar" style="height: 64%;"></div>Sat</div>
+            <div class="bar-wrap"><div class="bar" style="height: 58%;"></div>Sun</div>
+          </div>
+          <div class="note-box">
+            Scanify is designed for everyday use, whether you are checking product codes, saving links, or keeping a record of scanned items.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Ready to make scanning effortless?</h2>
+            <p>
+              Use Scanify to scan faster, stay organized, revisit important results, and keep track of your scanning activity in one modern app.
+            </p>
+            <div class="note-box">
+              Some features rely on internet access, such as product lookups and analytics services. Ads may be shown in parts of the app.
+            </div>
+          </div>
+          <div class="cta-actions">
+            <a href="#" class="btn btn-primary">Get it on Google Play</a>
+            <a href="#features" class="btn btn-secondary">See Features</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>© 2026 Scanify. All rights reserved.</div>
+      <div>Fast scanning • Smart history • Useful insights</div>
+    </div>
+  </footer>
 </body>
 </html>
